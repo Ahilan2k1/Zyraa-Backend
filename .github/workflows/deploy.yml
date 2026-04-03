@@ -1,0 +1,47 @@
+name: Deploy to EC2
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Login to AWS ECR
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Build Docker Image
+        run: |
+          docker build -t myshop-api .
+          docker tag myshop-api:latest 547519647854.dkr.ecr.ap-south-1.amazonaws.com/myshop-api:latest
+
+      - name: Push to ECR
+        run: |
+          docker push 547519647854.dkr.ecr.ap-south-1.amazonaws.com/myshop-api:latest
+
+      - name: Deploy to EC2 via SSH
+        uses: appleboy/ssh-action@v0.1.10
+        with:
+          host: 13.235.244.161
+          username: ec2-user
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            docker pull 547519647854.dkr.ecr.ap-south-1.amazonaws.com/myshop-api:latest
+            docker stop $(docker ps -q) || true
+            docker rm $(docker ps -aq) || true
+            docker run -d -p 8080:8080 \
+              -e ASPNETCORE_URLS=http://+:8080 \
+              -e ASPNETCORE_ENVIRONMENT=Production \
+              -e JWT_SECRET=YourSuperSecretKey123456789 \
+              -e RAZORPAY_KEY_ID=rzp_test_xxx \
+              -e RAZORPAY_KEY_SECRET=yyy \
+              -e EMAIL_SENDER=your@gmail.com \
+              -e EMAIL_USERNAME=your@gmail.com \
+              -e EMAIL_PASSWORD=your_app_password \
+              547519647854.dkr.ecr.ap-south-1.amazonaws.com/myshop-api:latest
