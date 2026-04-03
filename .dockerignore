@@ -1,0 +1,7 @@
+bin/
+obj/
+*.db           # Don't include local database
+wwwroot/uploads/  # Don't bundle uploaded files
+.env
+appsettings.Development.json
+MyShop.Tests/

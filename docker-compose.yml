@@ -1,0 +1,74 @@
+version: '3.8'
+# docker-compose file format version
+# 3.8 supports all modern features
+
+services:
+  # 'api' is the name of our service (you choose this)
+  api:
+    build:
+      context: .
+      # context = where to look for files (current directory)
+      # Docker sends this entire folder to the Docker daemon
+      dockerfile: Dockerfile
+      # Which Dockerfile to use (default is 'Dockerfile')
+
+    container_name: myshop-api
+    # Give container a fixed name so you can do:
+    # docker logs myshop-api (instead of random name)
+
+    ports:
+      - "8080:8080"
+      # "HOST_PORT:CONTAINER_PORT"
+      # Left side (8080) = port on YOUR machine
+      # Right side (8080) = port inside container
+      # So: localhost:8080 → container:8080
+
+    environment:
+      # These inject environment variables into the container
+      # ASP.NET Core reads env vars and uses them to OVERRIDE appsettings.json
+      # The format: "Section__Key" (double underscore = nested config)
+      - ASPNETCORE_ENVIRONMENT=Production
+
+      - ASPNETCORE_URLS=http://0.0.0.0:8080
+
+      # These override Jwt:Key in appsettings.Production.json
+      - Jwt__Key=YourSuperSecretKeyThatIsAtLeast32CharactersLong!
+
+      # These override Razorpay:KeyId and Razorpay:KeySecret
+      - Razorpay__KeyId=rzp_test_XXXXXXXXXXXX
+      - Razorpay__KeySecret=YYYYYYYYYYYYYYYY
+
+      # These override Email section
+      - Email__SenderEmail=your@gmail.com
+      - Email__Username=your@gmail.com
+      - Email__Password=your-gmail-app-password
+
+    volumes:
+      # "HOST_PATH:CONTAINER_PATH"
+      # Left = folder on your actual machine
+      # Right = folder inside container
+      # Changes on either side are reflected immediately
+
+      - ./data:/app/data
+      # ./data = create a 'data' folder next to docker-compose.yml
+      # /app/data = where SQLite DB lives in container
+      # Result: DB file saved on your machine, survives container restart ✅
+
+      - ./uploads:/app/wwwroot/uploads/products
+      # Same for uploaded images
+
+    restart: unless-stopped
+    # Restart policy:
+    # 'no' = never restart (default)
+    # 'always' = restart even if manually stopped
+    # 'unless-stopped' = restart on crash, but not if you manually stop it ✅
+    # 'on-failure' = only restart on non-zero exit code
+
+    healthcheck:
+      # Docker will call this URL every 30s
+      # If it fails 3 times, container is marked "unhealthy"
+      test: ["CMD", "curl", "-f", "http://localhost:8080/api/health"]
+      interval: 30s    # Check every 30 seconds
+      timeout: 10s     # Wait max 10s for response
+      retries: 3       # Mark unhealthy after 3 failures
+      start_period: 40s # Wait 40s before first check (app startup time)
