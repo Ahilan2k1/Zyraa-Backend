@@ -135,7 +135,7 @@ if (!Directory.Exists(dbPath))
 // Health check
 app.MapGet("/api/health", () => Results.Ok(new
 {
-    status = "Zyraa",
+    status = "Zyraa healthy is good",
     time = DateTime.UtcNow
 }));
 
