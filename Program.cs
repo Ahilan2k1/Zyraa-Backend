@@ -26,6 +26,17 @@ builder.Services.AddHsts(options =>
     options.IncludeSubDomains = true;
 });
 
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAngularApp", policy =>
+    {
+        policy.WithOrigins("http://localhost:4200","http://localhost:56450", "http://myshop-angular-app.com")
+        .AllowAnyMethod()
+        .AllowAnyHeader()
+        .AllowCredentials();
+    });
+});
+
 builder.Services.AddControllers();
 
 // ✅ FIX: Dynamic connection string BEFORE Build()
